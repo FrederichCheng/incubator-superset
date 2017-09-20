@@ -24,7 +24,10 @@ from superset.stats_logger import DummyStatsLogger
 STATS_LOGGER = DummyStatsLogger()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DATA_DIR = os.path.join(os.path.expanduser('~'), '.superset')
+if 'SUPERSET_HOME' in os.environ:
+    DATA_DIR = os.environ['SUPERSET_HOME']
+else:
+    DATA_DIR = os.path.join(os.path.expanduser('~'), '.superset')
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
@@ -57,11 +60,23 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(DATA_DIR, 'superset.db')
 # SQLALCHEMY_DATABASE_URI = 'mysql://myapp@localhost/myapp'
 # SQLALCHEMY_DATABASE_URI = 'postgresql://root:password@localhost/myapp'
 
+# In order to hook up a custom password store for all SQLACHEMY connections
+# implement a function that takes a single argument of type 'sqla.engine.url',
+# returns a password and set SQLALCHEMY_CUSTOM_PASSWORD_STORE.
+#
+# e.g.:
+# def lookup_password(url):
+#     return 'secret'
+# SQLALCHEMY_CUSTOM_PASSWORD_STORE = lookup_password
+
 # The limit of queries fetched for query search
 QUERY_SEARCH_LIMIT = 1000
 
 # Flask-WTF flag for CSRF
 WTF_CSRF_ENABLED = True
+
+# Add endpoints that need to be exempt from CSRF protection
+WTF_CSRF_EXEMPT_LIST = []
 
 # Whether to run the web server in debug mode or not
 DEBUG = False
@@ -169,6 +184,11 @@ TABLE_NAMES_CACHE_CONFIG = {'CACHE_TYPE': 'null'}
 ENABLE_CORS = False
 CORS_OPTIONS = {}
 
+# CSV Options: key/value pairs that will be passed as argument to DataFrame.to_csv method
+# note: index option should not be overridden
+CSV_EXPORT = {
+    'encoding': 'utf-8',
+}
 
 # ---------------------------------------------------
 # List of viz_types not allowed in your environment
@@ -242,6 +262,8 @@ class CeleryConfig(object):
   CELERY_RESULT_BACKEND = 'db+sqlite:///celery_results.sqlite'
   CELERY_ANNOTATIONS = {'tasks.add': {'rate_limit': '10/s'}}
   CELERYD_LOG_LEVEL = 'DEBUG'
+  CELERYD_PREFETCH_MULTIPLIER = 1
+  CELERY_ACKS_LATE = True
 CELERY_CONFIG = CeleryConfig
 """
 CELERY_CONFIG = None
