@@ -2,6 +2,7 @@ const webpack = require('webpack');
 const path = require('path');
 const ManifestPlugin = require('webpack-manifest-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 // input dir
 const APP_DIR = path.resolve(__dirname, './');
@@ -14,11 +15,11 @@ const config = {
     fs: 'empty',
   },
   entry: {
-    'css-theme': APP_DIR + '/javascripts/css-theme.js',
+    theme: APP_DIR + '/javascripts/theme.js',
     common: APP_DIR + '/javascripts/common.js',
     addSlice: ['babel-polyfill', APP_DIR + '/javascripts/addSlice/index.jsx'],
-    dashboard: ['babel-polyfill', APP_DIR + '/javascripts/dashboard/Dashboard.jsx'],
     explore: ['babel-polyfill', APP_DIR + '/javascripts/explore/index.jsx'],
+    dashboard: ['babel-polyfill', APP_DIR + '/javascripts/dashboard/Dashboard.jsx'],
     sqllab: ['babel-polyfill', APP_DIR + '/javascripts/SqlLab/index.jsx'],
     welcome: ['babel-polyfill', APP_DIR + '/javascripts/welcome.js'],
     profile: ['babel-polyfill', APP_DIR + '/javascripts/profile/index.jsx'],
@@ -35,12 +36,10 @@ const config = {
     ],
     alias: {
       webworkify: 'webworkify-webpack',
-      'mapbox-gl$': path.join(__dirname, '/node_modules/mapbox-gl/dist/mapbox-gl.js'),
     },
 
   },
   module: {
-    noParse: /mapbox-gl\/dist/,
     loaders: [
       {
         test: /datatables\.net.*/,
@@ -58,17 +57,24 @@ const config = {
           ],
         },
       },
-      /* for mapbox-gl/js/geo/transform */
-      {
-        test: /\.js$/,
-        include: APP_DIR + '/node_modules/mapbox-gl/js',
-        loader: 'babel-loader',
-      },
-      /* for require('*.css') */
+      // Extract css files
       {
         test: /\.css$/,
         include: APP_DIR,
-        loader: 'style-loader!css-loader',
+        loader: ExtractTextPlugin.extract({
+          use: ['css-loader'],
+          fallback: 'style-loader',
+        }),
+      },
+      // Optionally extract less files
+      // or any other compile-to-css language
+      {
+        test: /\.less$/,
+        include: APP_DIR,
+        loader: ExtractTextPlugin.extract({
+          use: ['css-loader', 'less-loader'],
+          fallback: 'style-loader',
+        }),
       },
       /* for css linking images */
       {
@@ -92,22 +98,6 @@ const config = {
         test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
         loader: 'file-loader',
       },
-      /* for require('*.less') */
-      {
-        test: /\.less$/,
-        include: APP_DIR,
-        loader: 'style-loader!css-loader!less-loader',
-      },
-      /* for mapbox */
-      {
-        test: /\.json$/,
-        loader: 'json-loader',
-      },
-      {
-        test: /\.js$/,
-        include: APP_DIR + '/node_modules/mapbox-gl/js/render/painter/use_program.js',
-        loader: 'transform/cacheable?brfs',
-      },
     ],
   },
   externals: {
@@ -123,6 +113,7 @@ const config = {
         NODE_ENV: JSON.stringify(process.env.NODE_ENV),
       },
     }),
+    new ExtractTextPlugin('[name].[chunkhash].css'),
   ],
 };
 if (process.env.NODE_ENV === 'production') {
